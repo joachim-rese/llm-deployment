@@ -6,8 +6,8 @@ import time
 logging.getLogger().setLevel(logging.INFO)
 
 # global variables
-S3_ACCESS_KEY_ID =  os.getenv('s3_access_key_id')
-S3_SECRET_ACCESS_KEY = os.getenv('s3_secret_access_key')
+AWS_ACCESS_KEY_ID =  os.getenv('aws_access_key_id')
+AWS_SECRET_ACCESS_KEY = os.getenv('aws_secret_access_key')
 S3_BUCKET_NAME = os.getenv('s3_bucket_name')
 S3_OBJECT_NAME = os.getenv('s3_object_name')
 
@@ -25,7 +25,7 @@ def missing_environment(var1, var2=None):
     return False
 
 def check_environment():
-    global STORE_DIR, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
+    global STORE_DIR, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
     if STORE_DIR == None:
         STORE_DIR = '/store'
     if MODEL_DIR == None:
@@ -48,10 +48,10 @@ def check_environment():
     return True
 
 def check_keys():
-    global STORE_DIR, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
-    if S3_ACCESS_KEY_ID == None:
+    global STORE_DIR, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
+    if AWS_ACCESS_KEY_ID == None:
         return missing_environment('s3_access_key_id')
-    if S3_SECRET_ACCESS_KEY == None:
+    if AWS_SECRET_ACCESS_KEY == None:
         return missing_environment('s3_secret_access_key')
     if S3_BUCKET_NAME == None:
         return missing_environment('s3_bucket_name')
@@ -60,7 +60,7 @@ def check_keys():
 
 
 def load_model():
-    global STORE_DIR, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
+    global STORE_DIR, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
     if not os.path.exists(STORE_DIR):
         logging.error(f'Directory "{STORE_DIR}" not mounted')
         return False
@@ -75,7 +75,7 @@ def load_model():
         logging.info(f'Start downloading: {S3_BUCKET_NAME}/{S3_OBJECT_NAME}')
         if not check_keys():
             return False
-        s3 = boto3.client('s3', aws_access_key_id=S3_ACCESS_KEY_ID, aws_secret_access_key=S3_SECRET_ACCESS_KEY)
+        s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
         start_time = time.time()
         s3.download_file(S3_BUCKET_NAME, S3_OBJECT_NAME, MODEL_FILE_FULL)
         elapsed_time = time.time() - start_time
