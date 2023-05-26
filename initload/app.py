@@ -50,9 +50,9 @@ def check_environment():
 def check_keys():
     global STORE_DIR, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
     if AWS_ACCESS_KEY_ID == None:
-        return missing_environment('s3_access_key_id')
+        return missing_environment('aws_access_key_id')
     if AWS_SECRET_ACCESS_KEY == None:
-        return missing_environment('s3_secret_access_key')
+        return missing_environment('aws_secret_access_key')
     if S3_BUCKET_NAME == None:
         return missing_environment('s3_bucket_name')
     return True
@@ -71,17 +71,32 @@ def load_model():
     if not os.path.exists(MODEL_DIR_FULL):
         os.makedirs(MODEL_DIR_FULL)
         logging.info(f'Directory "{MODEL_DIR_FULL}" created.')
-    if not os.path.isfile(MODEL_FILE_FULL):
-        logging.info(f'Start downloading: {S3_BUCKET_NAME}/{S3_OBJECT_NAME}')
-        if not check_keys():
-            return False
-        s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-        start_time = time.time()
-        s3.download_file(S3_BUCKET_NAME, S3_OBJECT_NAME, MODEL_FILE_FULL)
-        elapsed_time = time.time() - start_time
-        logging.info(f'Download of file "{MODEL_FILE_FULL}" successfully completed, elapsed time: {elapsed_time:.2f}s.')
+    s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+    object_list = []
+    if S3_OBJECT_NAME == '*':
+        response = s3.list_objects_v2(Bucket=S3_BUCKET_NAME)
+        for object in response['Contents']:
+            object_list.append(object['Key'])
     else:
-        logging.info(f'Model file "{MODEL_FILE_FULL}" exists already -> download skipped.')
+        object_list.append(S3_OBJECT_NAME)
+    
+    count = 0
+    start_time = time.time()
+    keys_checked = False
+    for object in object_list:
+        if not keys_checked:
+            if not check_keys():
+                return False
+            keys_checked = True
+        model_file_full = os.path.join(MODEL_DIR_FULL, object) if S3_OBJECT_NAME == '*' else MODEL_FILE_FULL
+        if not os.path.isfile(model_file_full):
+            logging.info(f'Start downloading: {S3_BUCKET_NAME}/{object}')
+            s3.download_file(S3_BUCKET_NAME, object, model_file_full)
+            count = count + 1
+        else:
+            logging.info(f'Model file "{object}" exists already -> download skipped.')
+    elapsed_time = time.time() - start_time
+    logging.info(f'Downloaded {count} file successfully completed, elapsed time: {elapsed_time:.2f}s.')
     return True
 
 
