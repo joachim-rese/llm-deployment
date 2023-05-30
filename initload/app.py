@@ -11,6 +11,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv('aws_secret_access_key')
 S3_BUCKET_NAME = os.getenv('s3_bucket_name')
 S3_OBJECT_NAME = os.getenv('s3_object_name')
 
+MODEL_LOCATION = os.getenv('model_location')
 MODEL_DIR = os.getenv('model_dir')
 MODEL_FILE = os.getenv('model_file')
 STORE_DIR = os.getenv('STORE_DIR')
@@ -25,9 +26,11 @@ def missing_environment(var1, var2=None):
     return False
 
 def check_environment():
-    global STORE_DIR, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
+    global STORE_DIR, MODEL_LOCATION, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
     if STORE_DIR == None:
         STORE_DIR = '/store'
+    if MODEL_LOCATION == None:
+        MODEL_LOCATION = 'checkpoints'
     if MODEL_DIR == None:
         if not S3_BUCKET_NAME == None:
             MODEL_DIR = S3_BUCKET_NAME
@@ -43,12 +46,14 @@ def check_environment():
             S3_OBJECT_NAME = MODEL_FILE
         else:
             return missing_environment('model_file', 's3_object_name')
-    MODEL_DIR_FULL = os.path.join(STORE_DIR, 'checkpoints', MODEL_DIR)
+    if MODEL_DIR == '':
+        MODEL_DIR = None
+    MODEL_DIR_FULL = os.path.join(STORE_DIR, MODEL_LOCATION, MODEL_DIR) if not MODEL_DIR == None else os.path.join(STORE_DIR, MODEL_LOCATION)
     MODEL_FILE_FULL = os.path.join(MODEL_DIR_FULL, MODEL_FILE) 
     return True
 
 def check_keys():
-    global STORE_DIR, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
+    global STORE_DIR, MODEL_LOCATION, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
     if AWS_ACCESS_KEY_ID == None:
         return missing_environment('aws_access_key_id')
     if AWS_SECRET_ACCESS_KEY == None:
@@ -60,7 +65,7 @@ def check_keys():
 
 
 def load_model():
-    global STORE_DIR, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
+    global STORE_DIR, MODEL_LOCATION, MODEL_DIR, MODEL_FILE, MODEL_DIR_FULL, MODEL_FILE_FULL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_OBJECT_NAME
     if not os.path.exists(STORE_DIR):
         logging.error(f'Directory "{STORE_DIR}" not mounted')
         return False
@@ -90,6 +95,13 @@ def load_model():
             keys_checked = True
         model_file_full = os.path.join(MODEL_DIR_FULL, object) if S3_OBJECT_NAME == '*' else MODEL_FILE_FULL
         if not os.path.isfile(model_file_full):
+            object_path = object.split('/')
+            index = 1
+            while index < len(object_path):
+                subpath = os.path.join(MODEL_DIR_FULL, *object_path[0:index])
+                if not os.path.exists(subpath):
+                    os.makedirs(subpath)
+                index = index + 1
             logging.info(f'Start downloading: {S3_BUCKET_NAME}/{object}')
             s3.download_file(S3_BUCKET_NAME, object, model_file_full)
             count = count + 1
