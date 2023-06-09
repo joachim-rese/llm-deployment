@@ -84,6 +84,11 @@ def load_model():
             object_list.append(object['Key'])
     else:
         object_list.append(S3_OBJECT_NAME)
+
+    logging.info(f'Model directory is "{MODEL_DIR_FULL}". Content:')
+    for file in os.listdir(MODEL_DIR_FULL):
+        file_full = os.path.join(MODEL_DIR_FULL, file)
+        logging.info(f'{file} - {str(os.stat(file_full).st_size) if os.path.isfile(file_full) else "dir"}')
     
     count = 0
     start_time = time.time()
@@ -106,7 +111,7 @@ def load_model():
             s3.download_file(S3_BUCKET_NAME, object, model_file_full)
             count = count + 1
         else:
-            logging.info(f'Model file "{object}" exists already -> download skipped.')
+            logging.info(f'Model file "{object}" already exists -> download skipped.')
     elapsed_time = time.time() - start_time
     logging.info(f'Downloaded {count} file successfully completed, elapsed time: {elapsed_time:.2f}s.')
     return True
