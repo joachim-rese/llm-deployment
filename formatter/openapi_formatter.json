@@ -1,0 +1,124 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "formatter",
+    "description": "Simple web service to evaluate a f-string",
+    "x-ibm-annotations": "true",
+    "x-ibm-application-name": "String Formatter",
+    "x-ibm-application-id": "formatter",
+    "x-ibm-skill-type": "imported",
+    "version": "0.0.1"
+  },
+  "servers": [
+    {
+      "url": "https://formatter.15tla4m0piuh.eu-de.codeengine.appdomain.cloud/"
+    }
+  ],
+  "security": [
+  ],
+  "paths": {
+    "/format": {
+      "post": {
+        "summary": "String Formatter",
+        "description": "Evaluates f-string to format text",
+        "operationId": "formatter",
+        "requestBody": {
+          "description": "String Formatter",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/format"
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "$ref": "#/components/schemas/format"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/format"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+	  "format": {
+        "type": "object",
+		"required": [
+          "text"
+        ],
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "regex": {
+            "type": "string",
+			"default": " "
+		  },
+          "format": {
+            "type": "string",
+			"default": "Extract Supplier, Product and Price from the offer below.\nOffer: {#1}\n"
+		  }
+		}
+	  },
+	  "response": {
+        "type": "object",
+		"properties": {
+          "formatted": {
+            "type": "string"
+		  }
+		}
+	  }
+    },
+	"requestBodies": {
+      "generate": {
+        "description": "generate object",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/response"
+            }
+          },
+          "application/xml": {
+            "schema": {
+              "$ref": "#/components/schemas/response"
+            }
+          }
+        }
+      }
+	},
+	"securitySchemes": {
+		"bearerAuth": {
+			"type": "apiKey",
+            "in": "header",
+            "name": "authorization"
+        }
+    }
+  }
+}
