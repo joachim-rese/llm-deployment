@@ -13,7 +13,7 @@ def format():
         text = data['text'] if 'text' in data.keys() else ""
         
         try:
-            params = re.findall(data['regex'], text) if 'regex' in data.keys() and data['regex'] != "" else [text]
+            params = re.findall(data['regex'], text) if 'regex' in data.keys() and data['regex'].strip() != "" else [text]
         except Exception as e:
             return {'formatted': f"REGEX ERROR: {str(e)}"}
         
