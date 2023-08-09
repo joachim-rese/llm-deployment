@@ -22,7 +22,8 @@ SETTINGS = {
     'MODEL_LOCATION': os.getenv('model_location'),
     'MODEL_DIR': os.getenv('model_dir'),
     'MODEL_FILE': os.getenv('model_file'),
-    'STORE_DIR': os.getenv('STORE_DIR')
+    'STORE_DIR': os.getenv('STORE_DIR'),
+    'FORCE_DOWNLOAD': os.getenv('force_download')
 }
 
 
@@ -133,6 +134,9 @@ def load_model():
     force = False
 
     # check origin
+    bucket_path, _ = os.path.split(SETTINGS['S3_OBJECT_NAME'])
+    if bucket_path != "" and not bucket_path.endswith('/'):
+        bucket_path = bucket_path + '/'
     bucket_filename = os.path.join(SETTINGS['MODEL_DIR_FULL'], '_bucket.txt')
     try:
         with open(bucket_filename, "r") as _f:
@@ -142,26 +146,34 @@ def load_model():
     if not bucket.startswith(SETTINGS['S3_BUCKET_NAME']) or not bucket.endswith(SETTINGS['S3_OBJECT_NAME']) or not str(SETTINGS['ENDPOINT']) in bucket:
         # different bucket -> delete old content
         force = True
+    if SETTINGS['FORCE_DOWNLOAD'] == 'true':
+        logging.info(f"FORCE_DOWNLOAD set -> deleting directory content!")
+        force = True
 
+    # drop files on local that do not match bucket
     for object in bucket_objects:
         bucket_file = object['Key']
-        if bucket_file.endswith('/') or bucket_file not in filedir.keys():
+        bucket_base = bucket_file[len(bucket_path):]  # filename relative to dir in bucket
+        if bucket_file.endswith('/') or bucket_base not in filedir.keys():
+            # object is dir or does not exist on local
             continue
-        file_stat = filedir[object['Key']]
+        file_stat = filedir[bucket_base]
         if object['LastModified'] > file_stat['date'] or object['Size'] != file_stat['size'] or force:
             logging.info(f"File {bucket_file} in bucket differs from filesystem -> deleting")
             os.remove(file_stat['filepath'])
             wait = True
-        filedir.pop(object['Key'])
+        filedir.pop(bucket_base)
+
+    # loop on files on local that are not in bucket
     for k in filedir.keys():
         if filedir[k]['filepath'] != bucket_filename:
             logging.info(f"File {k} not in bucket -> deleting")
             os.remove(filedir[k]['filepath'])
+
     if wait:
         # wait a few seconds to ensure that file deletion has finished
         time.sleep(5)
 
-    bucket_path, _ = os.path.split( SETTINGS['S3_OBJECT_NAME'])
     if SETTINGS['S3_OBJECT_NAME'].endswith('*'):
         for object in bucket_objects:
             if object['Key'].startswith(bucket_path):
@@ -180,7 +192,7 @@ def load_model():
         if object.endswith('/'):
             continue
         
-        model_file_base = object[len(bucket_path)+1:] if bucket_path != "" else object
+        model_file_base = object[len(bucket_path):]
         model_file_full = os.path.join(SETTINGS['MODEL_DIR_FULL'], model_file_base)
         if not os.path.isfile(model_file_full):
             object_path = model_file_base.split('/')
@@ -200,7 +212,7 @@ def load_model():
             
             count = count + 1
         else:
-            logging.info(f'Model file "{object}" already exists -> download skipped.')
+            logging.info(f'Model file "{object}" already exists ({model_file_full})-> download skipped.')
     elapsed_time = time.time() - start_time
     logging.info(f'Download of {count} files successfully completed, elapsed time: {elapsed_time:.2f}s.')
 
