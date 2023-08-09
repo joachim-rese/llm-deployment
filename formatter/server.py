@@ -17,8 +17,14 @@ def format():
         except Exception as e:
             return {'formatted': f"REGEX ERROR: {str(e)}"}
         
-        for _idx, _param in enumerate(params):
-            formatstr = formatstr.replace(f"#{str(_idx+1)}", _param)
+        print(f"params--> {str(params)}")
+        
+        index = 1
+        for _param in params:
+            _parts = [_part for _part in _param] if isinstance(_param, (tuple, list)) else [_param]
+            for _part in _parts:
+                formatstr = formatstr.replace(f"#{str(index)}", _part)
+                index = index + 1
 
         output = eval('f"'+formatstr+'"')
         return {'formatted': output}
