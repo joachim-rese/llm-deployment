@@ -1,4 +1,5 @@
 import os
+import re
 from flask import Flask, request, json 
 
 app = Flask(__name__)
@@ -9,10 +10,16 @@ def format():
     if request.method == 'POST':
         data = json.loads(request.data)
         formatstr = data['format'] if 'format' in data.keys() else '{#1}{#2}{#3}'
-        parameter1 = data['parameter1'] if 'parameter1' in data.keys() else ""
-        parameter2 = data['parameter2'] if 'parameter2' in data.keys() else ""
-        parameter3 = data['parameter3'] if 'parameter3' in data.keys() else ""
-        formatstr = formatstr.replace("#1", "parameter1").replace("#2", "parameter2").replace("#3", "parameter3")
+        text = data['text'] if 'text' in data.keys() else ""
+        
+        try:
+            params = re.findall(data['regex'], text) if 'regex' in data.keys() else [text]
+        except Exception as e:
+            return {'formatted': f"REGEX ERROR: {str(e)}"}
+        
+        for _idx, _param in enumerate(params):
+            formatstr = formatstr.replace(f"#{str(_idx+1)}", _param)
+
         output = eval('f"'+formatstr+'"')
         return {'formatted': output}
         
