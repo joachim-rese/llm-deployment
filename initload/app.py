@@ -6,6 +6,7 @@ import glob
 from datetime import datetime, timezone
 import logging
 import time
+import argparse
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -23,7 +24,10 @@ SETTINGS = {
     'MODEL_DIR': os.getenv('model_dir'),
     'MODEL_FILE': os.getenv('model_file'),
     'STORE_DIR': os.getenv('STORE_DIR'),
-    'FORCE_DOWNLOAD': os.getenv('force_download')
+    'FORCE_DOWNLOAD': os.getenv('force_download'),
+    'UPLOAD_BUCKET_NAME':  os.getenv('upload_bucket_name'),
+    'UPLOAD_ACCESS_KEY_ID':  os.getenv('upload_access_key_id'),
+    'UPLOAD_SECRET_ACCESS_KEY':  os.getenv('upload_secret_access_key')
 }
 
 
@@ -41,6 +45,18 @@ def get_buckets():
     except Exception as e:
         print("Unable to retrieve list buckets: {0}".format(e))
 
+def get_bucket_contents(bucket_name):
+    print("Retrieving bucket contents from: {0}".format(bucket_name))
+    try:
+        cos = ibm_boto3.resource("s3", ibm_api_key_id=SETTINGS['APIKEY'], ibm_service_instance_id=SETTINGS['INSTANCE'], \
+                                config=Config(signature_version="oauth"), endpoint_url=SETTINGS['ENDPOINT'])
+        files = cos.Bucket(bucket_name).objects.all()
+        for file in files:
+            print("Item: {0} ({1} bytes).".format(file.key, file.size))
+    except ClientError as be:
+        print("CLIENT ERROR: {0}\n".format(be))
+    except Exception as e:
+        print("Unable to retrieve bucket contents: {0}".format(e))
 
 
 def missing_environment(var1, var2=None):
@@ -226,10 +242,37 @@ def load_model():
     return True
 
 
+def upload():
+    global SETTINGS
+    print(f"Transfering files from {SETTINGS['MODEL_DIR_FULL']} to bucket {SETTINGS['UPLOAD_BUCKET_NAME']}\n")
+    for file_full in glob.iglob(SETTINGS['MODEL_DIR_FULL'] + '/**/*', recursive=True):
+        file = os.path.relpath(file_full, SETTINGS['MODEL_DIR_FULL'])
+        print(file)
+
 
 if __name__ == '__main__':
     #get_buckets()
     #exit()
+    #get_bucket_contents("llama-models-for-eval")
+    #exit()
+
+    parser = argparse.ArgumentParser(
+                    prog='ProgramName',
+                    description='What the program does',
+                    epilog='Text at the bottom of help')
+    parser.add_argument('action', choices=[None, 'show', 'upload'])
+    args = parser.parse_args()
+
+    if args.action == 'show':
+        get_bucket_contents("llama-models-for-eval")
+        exit()
+
+    if args.action == 'upload':
+        if not check_environment():
+            exit(1)
+        upload()
+        exit()
+
     if not check_environment() or not load_model():
         # exit with error
         exit(1)

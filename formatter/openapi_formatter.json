@@ -78,12 +78,11 @@
             "type": "string"
           },
           "regex": {
-            "type": "string",
-			"default": " "
+            "type": "string"
 		  },
           "format": {
             "type": "string",
-			"default": "Extract Supplier, Product and Price from the offer below.\nOffer: {#1}\n"
+			"default": "Extract Supplier, Product and Price from the following offer: #1 "
 		  }
 		}
 	  },
