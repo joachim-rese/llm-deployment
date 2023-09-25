@@ -1,6 +1,8 @@
-#! /bin/bash
+#!/bin/bash
 
 source ./.env
+
+printf "%s [INF] Shutting down cluster %s...\n" "$(date)" "${OCP_CLUSTER}"
 
 # check notes status, stop nodes that are "running", continue until all nodes are running
 while true
