@@ -13,23 +13,23 @@ fi
 
 # check login
 user=`oc whoami 2>&1`
+words=`echo $user | wc -w`
 
-if [[ $user == *"Forbidden"* || $user == *"Unauthorized"* ]]
+if [ $words -gt 1 ]
 then
   printf "%s [INF] Login...\n" "$(date '+%Y-%m-%d %H:%M:%S')"
   token=`curl -u $OCP_USER:$OCP_PASSWORD -H "X-CSRF-Token: xxx" "${OCP_AUTH_URL}/oauth/authorize?client_id=openshift-challenging-client&response_type=token" -kL -w %{url_effective} | grep -oP "access_token=\K[^&]*"`
   printf "%s [INF] Got Token %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${token}"
   login=`oc login --token=$token --server=$OCP_API_URL 2>&1`
-  printf "%s [INF] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${login}"
-else
   if [ $? -ne 0 ]
   then
-    printf "%s [ERR] oc command failed: %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${user}"
+    printf "%s [ERR] oc login failed: %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${login}"
     exit 8
   fi
+  printf "%s [INF] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${login}"
+else
   printf "%s [INF] Logged in as %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${user}"
 fi
-
 
 
 zones=(`aws ec2 describe-capacity-reservations --filters "[{\"Name\": \"instance-type\", \"Values\": [\"${INSTANCE_TYPE}\"]}, {\"Name\": \"state\", \"Values\": [\"active\"]}]" --query CapacityReservations[].AvailabilityZone | jq -r 'flatten[]'`)

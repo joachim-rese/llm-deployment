@@ -5,11 +5,11 @@ source ./.env
 
 if [ -z $SHUTDOWN_WHEN_DONE ] || ! $SHUTDOWN_WHEN_DONE
 then
-  printf "%s [INF] Shutdown of cluster %s skipped according to environment variable setting.\n" "$(date)" "${OCP_CLUSTER}"
+  printf "%s [INF] Shutdown of cluster %s skipped according to environment variable setting.\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${OCP_CLUSTER}"
   exit 0
 fi
 
-printf "%s [INF] Shutting down cluster %s...\n" "$(date)" "${OCP_CLUSTER}"
+printf "%s [INF] Shutting down cluster %s...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${OCP_CLUSTER}"
 
 # check notes status, stop nodes that are "running", continue until all nodes are running
 while true
@@ -36,7 +36,7 @@ do
 
     if [ $state == "running" ]
     then
-      printf "%s [INF] Stopping instance $instance_id ...\n" "$(date)"
+      printf "%s [INF] Stopping instance $instance_id ...\n" "$(date '+%Y-%m-%d %H:%M:%S')"
       state=`aws ec2 stop-instances --instance-ids $instance_id`
       printf "%s [INF] %s\n" "$(date)" "${state}"
     else
@@ -51,7 +51,7 @@ do
 
   if [ $pending_count != 0 ]
   then
-    printf "%s [INF] Instances pending: %d / %d\n" "$(date)" $pending_count $instance_count
+    printf "%s [INF] Instances pending: %d / %d\n" "$(date '+%Y-%m-%d %H:%M:%S')" $pending_count $instance_count
   fi
 
   sleep 5s
