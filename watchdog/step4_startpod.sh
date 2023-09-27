@@ -6,16 +6,16 @@ replicas=`oc get deployments -n $NAMESPACE -o jsonpath="{.items[?(@.metadata.nam
 
 if [ -z $replicas ] || [ $replicas -lt 1 ]
 then
-  printf "%s [INF] Starting pod for deployment %s...\n" "$(date)" $INFERENCE_SERVER_POD
+  printf "%s [INF] Starting pod for deployment %s...\n" "$(date '+%Y-%m-%d %H:%M:%S')" $INFERENCE_SERVER_POD
   scaleup=`oc scale --replicas=1 deployment "${INFERENCE_SERVER_POD}" -n $NAMESPACE 2>&1`
   printf "%s [INF] %s\n" "$(date)" "${scaleup}"
   if [ $? -ne 0 ]
   then
-     printf "%s [ERR] Upscaling deployment %s failed.\n" "$(date)" $INFERENCE_SERVER_POD
+     printf "%s [ERR] Upscaling deployment %s failed.\n" "$(date '+%Y-%m-%d %H:%M:%S')" $INFERENCE_SERVER_POD
   fi
 fi
 
-printf "%s [INF] Waiting for replica of %s to become ready...\n" "$(date)" $INFERENCE_SERVER_POD
+printf "%s [INF] Waiting for replica of %s to become ready...\n" "$(date '+%Y-%m-%d %H:%M:%S')" $INFERENCE_SERVER_POD
 while true
 do
   readyReplicas=`oc get deployments -n $NAMESPACE -o jsonpath="{.items[?(@.metadata.name==\"${INFERENCE_SERVER_POD}\")].status.readyReplicas}"`
@@ -41,20 +41,20 @@ do
   fi
 done
 
-printf "%s [INF] ReplicaSet %s is latest.\n" "$(date)" $replicaset
+printf "%s [INF] ReplicaSet %s is latest.\n" "$(date '+%Y-%m-%d %H:%M:%S')" $replicaset
 for rs in $replicasets
 do
   if [ $rs != $replicaset ]
   then
-    printf "%s [WRN] Deleting replicaSet %s...\n" "$(date)" $rs
+    printf "%s [WRN] Deleting replicaSet %s...\n" "$(date '+%Y-%m-%d %H:%M:%S')" $rs
     rsdel=`oc delete replicaset $rs -n $NAMESPACE 2>&1`
-    printf "%s [INF] %s\n" "$(date)" "${rsdel}"
+    printf "%s [INF] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${rsdel}"
   fi
 done
 
 pod=`oc get pod -n $NAMESPACE -o jsonpath="{.items[?(@.metadata.ownerReferences[].name==\"${replicaset}\")].metadata.name}"`
 
-printf "%s [INF] Waiting for pod %s to get ready...\n" "$(date)" $pod
+printf "%s [INF] Waiting for pod %s to get ready...\n" "$(date '+%Y-%m-%d %H:%M:%S')" $pod
 
 while true
 do
@@ -65,7 +65,7 @@ do
   fi
 done
 
-printf "%s [INF] Pod %s up and running, checking log...\n" "$(date)" $pod
+printf "%s [INF] Pod %s up and running, checking log...\n" "$(date '+%Y-%m-%d %H:%M:%S')" $pod
 
 while true
 do
@@ -75,7 +75,7 @@ do
     do
       if [[ $line == *"server started"* ]]
       then
-        printf "%s [INF] Found in log: "%s"\n" "$(date)" "${line}"
+        printf "%s [INF] Found in log: "%s"\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${line}"
         serverStarted=true
       fi
     done
@@ -89,6 +89,4 @@ do
   sleep 10s
 done
 
-printf "%s [INF] Pod %s ready to serve requests.\n" "$(date)" $pod
-
-
+printf "%s [INF] Pod %s ready to serve requests.\n" "$(date '+%Y-%m-%d %H:%M:%S')" $pod

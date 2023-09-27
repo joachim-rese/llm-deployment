@@ -1,7 +1,7 @@
 #!/bin/bash
 
 execute() {
-  printf "%s [INF] Running script %s...\n" "$(date '+%Y-%m-%d %H:%M:%S')" $1
+  printf "%s [INF] ***** Running script %s *****\n" "$(date '+%Y-%m-%d %H:%M:%S')" $1
   /bin/bash ./$1
 
   if [ $? -ne 0 ]

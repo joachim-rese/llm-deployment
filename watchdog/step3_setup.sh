@@ -88,21 +88,27 @@ done
 
 machines=`(oc get machine -n openshift-machine-api -o jsonpath="{.items[?(@.metadata.ownerReferences[].name==\"${msetId}\")].metadata.name}")`
 unset $machine
-for mach in $machines
+while true
 do
-  phase=`oc get machine $mach -n openshift-machine-api -o jsonpath="{.status.phase}"`
-  if [ $phase == "Running" ]
+  for mach in $machines
+  do
+    phase=`oc get machine $mach -n openshift-machine-api -o jsonpath="{.status.phase}"`
+    if [ ! -z $phase ] && [ $phase == "Running" ]
+    then
+      machine="${mach}"
+      break
+    fi
+  done
+  
+  if [ -z $machine ]
   then
-    machine="${mach}"
+    printf "%s [INF] Machine set %s ready, but no machine found yet.\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${msetId}"
+    sleep 10s
+  else
     break
   fi
 done
 
-if [ -z $machine ]
-then
-  printf "%s [ERR] Machine set %s ready, but no machine found.\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${msetId}"
-  exit 8
-fi
 
 # wait for node
 printf "%s [INF] Waiting for machine %s to become node...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${machine}"
