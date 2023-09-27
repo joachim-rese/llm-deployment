@@ -5,7 +5,7 @@ source ./.env
 server=`oc whoami --show-server`
 if [ $server != $OCP_API_URL ]
 then
-  printf "%s [WRN] Wrong server %s (expecting %s)... performing logout\n" "$(date)" $server $OCP_API_URL
+  printf "%s [WRN] Wrong server %s (expecting %s)... performing logout\n" "$(date '+%Y-%m-%d %H:%M:%S')" $server $OCP_API_URL
   oc logout
 fi
 
@@ -15,13 +15,18 @@ user=`oc whoami 2>&1`
 
 if [[ $user == *"Forbidden"* || $user == *"Unauthorized"* ]]
 then
-  printf "%s [INF] Login...\n" "$(date)"
+  printf "%s [INF] Login...\n" "$(date '+%Y-%m-%d %H:%M:%S')"
   token=`curl -u $OCP_USER:$OCP_PASSWORD -H "X-CSRF-Token: xxx" "${OCP_AUTH_URL}/oauth/authorize?client_id=openshift-challenging-client&response_type=token" -kL -w %{url_effective} | grep -oP "access_token=\K[^&]*"`
-  printf "%s [INF] Got Token %s\n" "$(date)" $token
+  printf "%s [INF] Got Token %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${token}"
   login=`oc login --token=$token --server=$OCP_API_URL 2>&1`
-  printf "%s [INF] %s\n" "$(date)" "${login}"
+  printf "%s [INF] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${login}"
 else
-  printf "%s [INF] Logged in as %s\n" "$(date)" $user
+  if [ $? -ne 0 ]
+  then
+    printf "%s [ERR] oc command failed: %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${user}"
+    exit 8
+  fi
+  printf "%s [INF] Logged in as %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${user}"
 fi
 
 
@@ -46,30 +51,30 @@ do
   then
     msetId=${msets[$i]}
     replicas=${msets[(( $i + 2 ))]}
-    printf "%s [INF] Machine Set (instance type: %s, availability zone: %s, replicas: %s) found: %s\n" "$(date)" $instanceType $azone $replicas $msetId
+    printf "%s [INF] Machine Set (instance type: %s, availability zone: %s, replicas: %s) found: %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${instanceType}" "${azone}" "${replicas}" "${msetId}"
     break
   fi
 done
 
 if [ -z $msetId ]
 then
-  printf "%s [ERR] Machine Set (instance type: %s, availability zone: %s) not found\n" "$(date)" $INSTANCE_TYPE $azone
+  printf "%s [ERR] Machine Set (instance type: %s, availability zone: %s) not found\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${INSTANCE_TYPE}" "${azone}"
   exit 8
 fi
 
 if [ $replicas -eq 0 ]
 then
-  printf "%s [INF] Increasing number of machines in machine set %s...\n" "$(date)" $msetId
+  printf "%s [INF] Increasing number of machines in machine set %s...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${msetId}"
   scaleup=`oc scale --replicas=1 machineset "${msetId}" -n openshift-machine-api 2>&1`
   printf "%s [INF] %s\n" "$(date)" "${scaleup}"
   if [ $? -ne 0 ]
   then
-     printf "%s [ERR] Upscaling machine set %s failed.\n" "$(date)" $INSTANCE_TYPE $msetId
+     printf "%s [ERR] Upscaling machine set %s failed.\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${INSTANCE_TYPE}" "${msetId}"
   fi
 fi
 
 
-printf "%s [INF] Waiting for machine in machine set %s to become ready...\n" "$(date)" $msetId
+printf "%s [INF] Waiting for machine in machine set %s to become ready...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${msetId}"
 while true
 do
    readyReplicas=`oc get machineset sap-dat5-4hrkd-worker-us-west-2b -n openshift-machine-api -o jsonpath="{.status.readyReplicas}"`
@@ -94,12 +99,12 @@ done
 
 if [ -z $machine ]
 then
-  printf "%s [ERR] Machine set %s ready, but no machine found.\n" "$(date)" $msetId
+  printf "%s [ERR] Machine set %s ready, but no machine found.\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${msetId}"
   exit 8
 fi
 
 # wait for node
-printf "%s [INF] Waiting for machine %s to become node...\n" "$(date)" $machine
+printf "%s [INF] Waiting for machine %s to become node...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${machine}"
 
 unset node
 while true
@@ -122,7 +127,7 @@ do
 done
   
 
-printf "%s [INF] Waiting for node %s to become ready...\n" "$(date)" "${node}"
+printf "%s [INF] Waiting for node %s to become ready...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${node}"
 
 while true
 do
@@ -134,7 +139,7 @@ do
   sleep 5s
 done
 
-printf "%s [INF] Node %s is ready now.\n" "$(date)" $node
+printf "%s [INF] Node %s is ready now.\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${node}"
 
 
 
