@@ -3,7 +3,6 @@
 source ./.env
 
 printf "%s [INF] Starting cluster %s...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${OCP_CLUSTER}"
-exit 0
 
 # check notes status, start nodes that are "stopped", continue until all nodes are running
 while true
@@ -28,8 +27,15 @@ do
     then
       continue
     fi
-    all_running=false
 
+    if [ $state == "terminated" ]
+    then
+      terminated_count=$(( $terminated_count + 1 ))
+      instance_count=$(( $instance_count - 1))
+      continue
+    fi
+
+    all_running=false
     if [ $state == "stopped" ]
     then
       printf "%s [INF] Starting instance $instance_id ...\n" "$(date '+%Y-%m-%d %H:%M:%S')"
@@ -37,13 +43,7 @@ do
       printf "%s [INF] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${state}"
       started_count=$(( $started_count + 1 ))
     else
-      if [ $state == "terminated" ]
-      then
-        terminated_count=$(( $terminated_count + 1 ))
-        instance_count=$(( $instance_count - 1))
-      else
-        pending_count=$(( $pending_count + 1 ))
-      fi
+      pending_count=$(( $pending_count + 1 ))
     fi 
   done
 

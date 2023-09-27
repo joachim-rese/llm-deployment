@@ -1,12 +1,12 @@
 #!/bin/bash
 
 execute() {
-  printf "%s [INF] Running script %s...\n" "$(date)" $1
+  printf "%s [INF] Running script %s...\n" "$(date '+%Y-%m-%d %H:%M:%S')" $1
   /bin/bash ./$1
 
   if [ $? -ne 0 ]
   then
-    printf "%s [ERR] Script %s failed.\n" "$(date)" $1
+    printf "%s [ERR] Script %s failed.\n" "$(date '+%Y-%m-%d %H:%M:%S')" $1
     /bin/bash ./step6_shutdown.sh
     exit 8
   fi

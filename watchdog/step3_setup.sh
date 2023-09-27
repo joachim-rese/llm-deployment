@@ -2,6 +2,7 @@
 
 source ./.env
 
+printf "%s [INF] Checking connection to cluster...\n" "$(date '+%Y-%m-%d %H:%M:%S')"
 server=`oc whoami --show-server`
 if [ $server != $OCP_API_URL ]
 then
