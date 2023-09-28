@@ -26,15 +26,24 @@ done
 # Issue a capacity request (1 hour validity) every 5 seconds until accepted
 #
 printf "%s [INF] Issuing capacity reservation request...\n" "$(date '+%Y-%m-%d %H:%M:%S')"
+message_count=0
 while true
 do
-  # calculate end time (1 hour from now)
+  # calculate end time (1 hour from now) and issue reservation
   end_sec=$(((`date +%s`) + 3600))
   end_date=`date -u -Iseconds --date="@${end_sec}"`
-  aws ec2 --region $REGION create-capacity-reservation --end-date $end_date --end-date-type limited --instance-type $INSTANCE_TYPE --instance-platform Linux/UNIX --availability-zone $AVAILABILITY_ZONE --instance-count 1
-  if ! [ $? -ne 0 ]
+  reservation=`aws ec2 --region $REGION create-capacity-reservation --end-date $end_date --end-date-type limited --instance-type $INSTANCE_TYPE --instance-platform Linux/UNIX --availability-zone $AVAILABILITY_ZONE --instance-count 1 2>&1`
+  if [ $? -eq 0 ]
   then
     break
+  fi
+
+  # write message ~ every 5 minutes
+  message_count=$(( $message_count - 1))
+  if [ $message_count -le 0 ]
+  then
+    printf "%s [ERR] Capacity reservation failed: %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${reservation}"
+    message_count=60
   fi
   sleep 5s
 done
