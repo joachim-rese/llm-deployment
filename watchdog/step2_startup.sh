@@ -4,7 +4,9 @@ source ./.env
 
 printf "%s [INF] Starting cluster %s...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${OCP_CLUSTER}"
 
-# check notes status, start nodes that are "stopped", continue until all nodes are running
+#
+# Check notes status, start nodes that are "stopped", continue until all nodes are "running"
+#
 while true
 do
 
@@ -62,6 +64,7 @@ done
 
 printf "%s [INF] All %d nodes are running.\n" "$(date '+%Y-%m-%d %H:%M:%S')" $instance_count
 
+# set variable SHUTDOWN_WHEN_DONE in file .env
 if [ -z $SHUTDOWN ] || [ $SHUTDOWN == "auto" ]
 then
   if [ $((instance_count - started_count)) -ge 2 ]
@@ -92,6 +95,10 @@ else
   sed -i "/SHUTDOWN_WHEN_DONE/s/=.*$/=${shutdown_action}/" .env
 fi
 
+
+#
+# Wait until all instances have finished initialization
+#
 while true
 do
   states=(`aws ec2 describe-instance-status --instance-ids $instance_ids --query=InstanceStatuses[].[InstanceStatus.Status,SystemStatus.Status] | jq -r 'flatten[]'`)

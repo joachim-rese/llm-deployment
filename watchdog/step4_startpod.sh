@@ -2,6 +2,10 @@
 
 source ./.env
 
+
+#
+# Upscale deployment, if necessary
+#
 replicas=`oc get deployments -n $NAMESPACE -o jsonpath="{.items[?(@.metadata.name==\"${INFERENCE_SERVER_POD}\")].status.replicas}"`
 
 if [ -z $replicas ] || [ $replicas -lt 1 ]
@@ -29,6 +33,10 @@ do
   sleep 5s
 done
 
+
+#
+# Delete obsolete replicaSets
+#
 replicasets=(`oc get replicaset -n $NAMESPACE -o jsonpath="{range .items[?(@.metadata.ownerReferences[].name==\"${INFERENCE_SERVER_POD}\")]}[\"{.metadata.name}\",\"{.metadata.creationTimestamp}\"] {end}" | jq -r "flatten[]"`)
 latest="0"
 for (( i=0; i<${#replicasets[@]}; i+=2 ))
@@ -52,6 +60,10 @@ do
   fi
 done
 
+
+#
+# Wait for pod to become ready
+#
 pod=`oc get pod -n $NAMESPACE -o jsonpath="{.items[?(@.metadata.ownerReferences[].name==\"${replicaset}\")].metadata.name}"`
 
 printf "%s [INF] Waiting for pod %s to get ready...\n" "$(date '+%Y-%m-%d %H:%M:%S')" $pod
@@ -65,6 +77,10 @@ do
   fi
 done
 
+
+#
+# Wait for inference server to become ready (check logs)
+#
 printf "%s [INF] Pod %s up and running, checking log...\n" "$(date '+%Y-%m-%d %H:%M:%S')" $pod
 
 while true

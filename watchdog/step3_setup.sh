@@ -11,7 +11,9 @@ then
 fi
 
 
-# check login
+#
+# Login to cluster, get new token, if necessary
+#
 user=`oc whoami 2>&1`
 words=`echo $user | wc -w`
 
@@ -32,6 +34,9 @@ else
 fi
 
 
+#
+# Scale up relevant machine set, if necessary
+#
 zones=(`aws ec2 describe-capacity-reservations --filters "[{\"Name\": \"instance-type\", \"Values\": [\"${INSTANCE_TYPE}\"]}, {\"Name\": \"state\", \"Values\": [\"active\"]}]" --query CapacityReservations[].AvailabilityZone | jq -r 'flatten[]'`)
 
 if [ ${#zones[@]} -lt 1 ]
@@ -40,7 +45,6 @@ then
 else
   azone=${zones[0]}
 fi
-
 
 msets=(`oc get machineset -n openshift-machine-api -o jsonpath="{range .items[?(@.spec.template.spec.providerSpec.value.placement.availabilityZone==\"${azone}\")]}[\"{.metadata.name}\",\"{.spec.template.spec.providerSpec.value.instanceType}\",\"{.status.replicas}\"] {end}" | jq -r "flatten[]"`)
 
@@ -75,6 +79,9 @@ then
 fi
 
 
+#
+# Wait for machine to become ready
+#
 printf "%s [INF] Waiting for machine in machine set %s to become ready...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${msetId}"
 while true
 do
@@ -110,7 +117,9 @@ do
 done
 
 
-# wait for node
+#
+# Wait for node to become ready
+#
 printf "%s [INF] Waiting for machine %s to become node...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${machine}"
 
 unset node

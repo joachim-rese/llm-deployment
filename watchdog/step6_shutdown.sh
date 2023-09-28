@@ -9,9 +9,12 @@ then
   exit 0
 fi
 
+
+#
+# Check notes status, stop nodes that are "running", continue until all nodes are "stopped"
+#
 printf "%s [INF] Shutting down cluster %s...\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${OCP_CLUSTER}"
 
-# check notes status, stop nodes that are "running", continue until all nodes are running
 while true
 do
 
@@ -28,7 +31,7 @@ do
     state=${states[(( $i + 1 ))]}
     instance_ids+="${instance_id} "
     instance_count=$(( $instance_count + 1))
-    if [ $state == "stopped" ]
+    if [ $state == "stopped" ] || [ $state == "terminated" ]
     then
       continue
     fi
@@ -38,7 +41,7 @@ do
     then
       printf "%s [INF] Stopping instance $instance_id ...\n" "$(date '+%Y-%m-%d %H:%M:%S')"
       state=`aws ec2 stop-instances --instance-ids $instance_id`
-      printf "%s [INF] %s\n" "$(date)" "${state}"
+      printf "%s [INF] %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "${state}"
     else
       pending_count=$(( $pending_count + 1 ))
     fi 

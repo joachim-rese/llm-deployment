@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Run script "argv1" and shutdown cluster in case of an error
 execute() {
   printf "%s [INF] ***** Running script %s *****\n" "$(date '+%Y-%m-%d %H:%M:%S')" $1
   /bin/bash ./$1
@@ -12,8 +13,11 @@ execute() {
   fi
 }
 
-
-for script in "step1_reservation.sh" "step2_startup.sh" "step3_setup.sh" "step4_startpod.sh" "step5_experiment.sh" "step6_shutdown.sh"
+#
+# Run all scripts with prefix "step" (note: by default, ls lists files in alphabethical order)
+#
+sed -i '/^SHUTDOWN_WHEN_DONE/d' .env
+for script in $(ls -1 step*.sh)
 do
   execute $script
 done

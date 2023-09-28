@@ -10,6 +10,7 @@ then
   exit 0
 fi
 
+# check existing reservation
 states=`aws ec2 describe-capacity-reservations --filters "Name=instance-type,Values=${INSTANCE_TYPE}" --query CapacityReservations[].State | jq -r '.[]'`
 
 for state in $states
@@ -21,8 +22,10 @@ do
   fi
 done
 
+#
+# Issue a capacity request (1 hour validity) every 5 seconds until accepted
+#
 printf "%s [INF] Issuing capacity reservation request...\n" "$(date '+%Y-%m-%d %H:%M:%S')"
-
 while true
 do
   # calculate end time (1 hour from now)
@@ -33,10 +36,13 @@ do
   then
     break
   fi
-  sleep 1m
+  sleep 5s
 done
 
 
+#
+# Wait for capacity request to become active
+#
 printf "%s [INF] Waiting for active state...\n" "$(date '+%Y-%m-%d %H:%M:%S')"
 
 states=`aws ec2 describe-capacity-reservations --filters "Name=instance-type,Values=${INSTANCE_TYPE}" --query CapacityReservations[].State | jq -r '.[]'`
