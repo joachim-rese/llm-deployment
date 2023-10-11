@@ -17,12 +17,12 @@ Create file **.env** holding the following content. (Copy file .env_template ini
 |OCP_AUTH_URL<br>OCP_API_URL|OpenShift cluster oauth and api endpoint|
 |SHUTDOWN|Flag whether cluster is shutdown after test and on error (true/false/auto). auto = Cluster is shutdown if and only if it has been started by this tooling.|
 
-Afterwards start automated test by
+Afterwards start automated test in background
 ```
-./run.sh 
+nohup ./run.sh > run.out &
 ```
 
-All scripts with prefix *step* will be executed.
+All scripts with prefix *step* will be executed in alphabetical order.
 
 The provided scripts perform these tasks:
 

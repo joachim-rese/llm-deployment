@@ -26,8 +26,10 @@ SETTINGS = {
     'STORE_DIR': os.getenv('STORE_DIR'),
     'FORCE_DOWNLOAD': os.getenv('force_download'),
     'UPLOAD_BUCKET_NAME':  os.getenv('upload_bucket_name'),
+    'UPLOAD_DIR':  os.getenv('upload_dir'),
     'UPLOAD_ACCESS_KEY_ID':  os.getenv('upload_access_key_id'),
-    'UPLOAD_SECRET_ACCESS_KEY':  os.getenv('upload_secret_access_key')
+    'UPLOAD_SECRET_ACCESS_KEY':  os.getenv('upload_secret_access_key'),
+    'UPLOAD_ENDPOINT': os.getenv('upload_endpoint')
 }
 
 
@@ -52,7 +54,7 @@ def get_bucket_contents(bucket_name):
                                 config=Config(signature_version="oauth"), endpoint_url=SETTINGS['ENDPOINT'])
         files = cos.Bucket(bucket_name).objects.all()
         for file in files:
-            print("Item: {0} ({1} bytes).".format(file.key, file.size))
+            print("{0} ({2}, {1} bytes).".format(file.key, file.size, file.last_modified.strftime("%m/%d/%Y %H:%M:%S")))
     except ClientError as be:
         print("CLIENT ERROR: {0}\n".format(be))
     except Exception as e:
@@ -244,10 +246,23 @@ def load_model():
 
 def upload():
     global SETTINGS
-    print(f"Transfering files from {SETTINGS['MODEL_DIR_FULL']} to bucket {SETTINGS['UPLOAD_BUCKET_NAME']}\n")
+    print(f"Transfering files from {SETTINGS['MODEL_DIR_FULL']} to bucket {SETTINGS['UPLOAD_BUCKET_NAME']}/{SETTINGS['UPLOAD_DIR']}\n")
+    s3 = boto3.client('s3', aws_access_key_id=SETTINGS['UPLOAD_ACCESS_KEY_ID'], aws_secret_access_key=SETTINGS['UPLOAD_SECRET_ACCESS_KEY']) if SETTINGS['UPLOAD_ENDPOINT'] == None else \
+            boto3.client('s3', aws_access_key_id=SETTINGS['UPLOAD_ACCESS_KEY_ID'], aws_secret_access_key=SETTINGS['UPLOAD_SECRET_ACCESS_KEY'], endpoint_url=SETTINGS['ENDPOINT'])
     for file_full in glob.iglob(SETTINGS['MODEL_DIR_FULL'] + '/**/*', recursive=True):
-        file = os.path.relpath(file_full, SETTINGS['MODEL_DIR_FULL'])
-        print(file)
+        if os.path.isfile(file_full):
+            file = os.path.relpath(file_full, SETTINGS['MODEL_DIR_FULL'])
+            if file == '_bucket.txt':
+                continue
+            object_name = ((SETTINGS['UPLOAD_DIR'] + '/') if SETTINGS['UPLOAD_DIR'] != None else '') + file
+            logging.info(f'Copying file {file} to {object_name}')
+            try:
+              response = s3.upload_file(file_full, SETTINGS['UPLOAD_BUCKET_NAME'], object_name)
+            except ClientError as e:
+              logging.error(f"Error during upload: {str(response)}")
+              return False
+    return True
+
 
 
 if __name__ == '__main__':
