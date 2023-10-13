@@ -37,8 +37,10 @@ def get_buckets():
     global SETTINGS
     print("Retrieving list of buckets")
     try:
-        cos = ibm_boto3.resource("s3", ibm_api_key_id=SETTINGS['APIKEY'], ibm_service_instance_id=SETTINGS['INSTANCE'], \
-                                config=Config(signature_version="oauth"), endpoint_url=SETTINGS['ENDPOINT'])
+        #cos = ibm_boto3.resource("s3", ibm_api_key_id=SETTINGS['APIKEY'], ibm_service_instance_id=SETTINGS['INSTANCE'], \
+        #                        config=Config(signature_version="oauth"), endpoint_url=SETTINGS['ENDPOINT'])
+        cos = ibm_boto3.resource("s3", aws_access_key_id=SETTINGS['AWS_ACCESS_KEY_ID'], aws_secret_access_key=SETTINGS['AWS_SECRET_ACCESS_KEY'], \
+                                 endpoint_url=SETTINGS['ENDPOINT'])
         buckets = cos.buckets.all()
         for bucket in buckets:
             print("Bucket Name: {0}".format(bucket.name))
@@ -50,8 +52,10 @@ def get_buckets():
 def get_bucket_contents(bucket_name):
     print("Retrieving bucket contents from: {0}".format(bucket_name))
     try:
-        cos = ibm_boto3.resource("s3", ibm_api_key_id=SETTINGS['APIKEY'], ibm_service_instance_id=SETTINGS['INSTANCE'], \
-                                config=Config(signature_version="oauth"), endpoint_url=SETTINGS['ENDPOINT'])
+        #cos = ibm_boto3.resource("s3", ibm_api_key_id=SETTINGS['APIKEY'], ibm_service_instance_id=SETTINGS['INSTANCE'], \
+        #                        config=Config(signature_version="oauth"), endpoint_url=SETTINGS['ENDPOINT'])
+        cos = ibm_boto3.resource("s3", aws_access_key_id=SETTINGS['AWS_ACCESS_KEY_ID'], aws_secret_access_key=SETTINGS['AWS_SECRET_ACCESS_KEY'], \
+                                endpoint_url=SETTINGS['ENDPOINT'])
         files = cos.Bucket(bucket_name).objects.all()
         for file in files:
             print("{0} ({2}, {1} bytes).".format(file.key, file.size, file.last_modified.strftime("%m/%d/%Y %H:%M:%S")))
@@ -275,11 +279,15 @@ if __name__ == '__main__':
                     prog='ProgramName',
                     description='What the program does',
                     epilog='Text at the bottom of help')
-    parser.add_argument('action', choices=[None, 'show', 'upload'])
+    parser.add_argument('action', choices=[None, 'show', 'upload', 'buckets'], nargs='?')
     args = parser.parse_args()
 
+    if args.action == 'buckets':
+        get_buckets()
+        exit()
+
     if args.action == 'show':
-        get_bucket_contents("llama-models-for-eval")
+        get_bucket_contents(SETTINGS['S3_BUCKET_NAME'])
         exit()
 
     if args.action == 'upload':
