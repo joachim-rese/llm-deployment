@@ -2,7 +2,7 @@
 
 source ./.env
 
-states=`aws ec2 describe-instances --filters "Name=instance-type,Values=$INSTANCE_TYPE" --query "Reservations[].Instances[].State.Code" | jq -c '.[]'`
+states=(`aws ec2 describe-instances --region $REGION --filters "Name=instance-type,Values=$INSTANCE_TYPE" --query "Reservations[].Instances[].State.Code" | jq -c '.[]'`)
 
 for state in $states
 do

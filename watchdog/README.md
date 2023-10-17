@@ -8,7 +8,8 @@ Create file **.env** holding the following content. (Copy file .env_template ini
 
 |Variable|Value|
 |:---|:---|
-|REGION<br>AVAILABILITY_ZONE|Region and Availability Zone of GPU instance|
+|REGION<br>AVAILABILITY_ZONE|Region of GPU instance|
+|AVAILABILITY_ZONE_LIST|List of possible availability zones for reservation|
 |INSTANCE_TYPE|AWS Instance Type, for example<br>p3.8xlarge (V100)<br>p4d.24xlarge (A100, 40GB x 8)<br>p4de.24xlarge (A100, 80GB x 8)<br>p5.48xlarge (H100, 80GB x 8)|
 |INFERENCE_SERVER_POD|Inference server deployment, for exmaple llama-2-13b-chat-inference-server|
 |NAMESPACE|Project name of fmaas stack|
@@ -19,10 +20,15 @@ Create file **.env** holding the following content. (Copy file .env_template ini
 
 Afterwards start automated test in background
 ```
-nohup ./run.sh > run.out &
+nohup ./run.sh [steps] > run.out &
 ```
 
-All scripts with prefix *step* will be executed in alphabetical order.
+All scripts with prefix *stepX* will be executed in alphabetical order, where X is in *steps*. For example
+```
+nohup ./run.sh 134 > run.out &
+```
+runs all scripts starting with step1, step3 or step4.
+
 
 The provided scripts perform these tasks:
 

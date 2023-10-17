@@ -16,8 +16,23 @@ execute() {
 #
 # Run all scripts with prefix "step" (note: by default, ls lists files in alphabethical order)
 #
-sed -i '/^SHUTDOWN_WHEN_DONE/d' .env
+sed -i '/^SHUTDOWN_WHEN_DONE=/d' .env
+
+regex='step([0-9]*)'
 for script in $(ls -1 step*.sh)
 do
-  execute $script
+  if [[ ($# -eq 0) ]]
+  then
+    execute $script
+  else
+    if [[ $script =~ $regex ]]
+    then
+      if [[ $1 == *"${BASH_REMATCH[1]}"* ]]
+      then
+        execute $script
+      else 
+        printf "%s [INF] ***** Skipping script %s (not in \"%s\") *****\n" "$(date '+%Y-%m-%d %H:%M:%S')" $script $1
+      fi 
+    fi 
+  fi 
 done
