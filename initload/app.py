@@ -49,12 +49,15 @@ def get_buckets():
     except Exception as e:
         print("Unable to retrieve list buckets: {0}".format(e))
 
+
 def get_bucket_contents(bucket_name):
     print("Retrieving bucket contents from: {0}".format(bucket_name))
     try:
-        #cos = ibm_boto3.resource("s3", ibm_api_key_id=SETTINGS['APIKEY'], ibm_service_instance_id=SETTINGS['INSTANCE'], \
-        #                        config=Config(signature_version="oauth"), endpoint_url=SETTINGS['ENDPOINT'])
-        cos = ibm_boto3.resource("s3", aws_access_key_id=SETTINGS['AWS_ACCESS_KEY_ID'], aws_secret_access_key=SETTINGS['AWS_SECRET_ACCESS_KEY'], \
+        cos = \
+            ibm_boto3.resource("s3", ibm_api_key_id=SETTINGS['APIKEY'], ibm_service_instance_id=SETTINGS['INSTANCE'], \
+                                  config=Config(signature_version="oauth"), endpoint_url=SETTINGS['ENDPOINT']) \
+            if SETTINGS['INSTANCE'] != None else \
+            ibm_boto3.resource("s3", aws_access_key_id=SETTINGS['AWS_ACCESS_KEY_ID'], aws_secret_access_key=SETTINGS['AWS_SECRET_ACCESS_KEY'], \
                                 endpoint_url=SETTINGS['ENDPOINT'])
         files = cos.Bucket(bucket_name).objects.all()
         for file in files:
