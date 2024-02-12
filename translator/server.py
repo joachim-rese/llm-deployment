@@ -54,6 +54,8 @@ def translate():
 
     if request.method == 'POST':
         data = json.loads(request.data)
+
+        print("Payload received: " + str(data))
         if 'payload' in data:
             payload = { **data['payload']}
             text = payload
