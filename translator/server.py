@@ -29,11 +29,19 @@ def sap_translate(text, lang_from="", lang_to="en-US"):
         headers =  {"apikey": sap_translation_apikey, "Content-Type": "application/json"}
         data = { "sourceLanguage": lang_from, "targetLanguage": lang_to, "contentType": "text/plain", "encoding": "plain", "strictMode": False, "data": text }
         response = requests.post(sap_translation_url+'/translation', data=json.dumps(data), headers=headers)
+        response_body = response.json()
+        print(str(response_body))
         if response.status_code == 200:
-            return (response.json()['sourceLanguage'], response.json()['data'])
+            return (response_body['sourceLanguage'], response_body['data'])
         else:
+            if 'error' in response_body and 'code' in response_body['error']:
+                code = response_body['error']['code']
+                if code == 'UnsupportedLanguagePair':
+                    # probably (detected) sourceLanguage = targetLanguage
+                    return (lang_to, text)
+                else:
+                    return ('', 'ERROR: ' + code)
             sap_translation_active = False
-            print(f"Call to translation service failed with http status {str(response.status_code)}")
             return ('', 'ERROR: translation')
 
 # get available languages
@@ -42,11 +50,11 @@ def get_languages():
     headers =  {"apikey": sap_translation_apikey}
     response = requests.get(sap_translation_url+'/languages', headers=headers)
     if response.status_code == 200:
-        #print("gl-->" + str(response.json()['languages']))
         return response.json()['languages']
     else:
         print(f"Call to translation service failed with http status {str(response.status_code)}")
         return [{'bcpcode': 'en-US', 'name': 'English', 'to': ['en-US']}]
+
 
 @app.route('/translate', methods = ['POST'])
 def translate():
@@ -55,21 +63,27 @@ def translate():
     if request.method == 'POST':
         data = json.loads(request.data)
 
-        print("Payload received: " + str(data))
+        event = ''
+        if 'event' in data and 'name' in data['event']:
+            if data['event']['name'] == 'message_received':
+                event = 'I'
+            if data['event']['name'] == 'message_processed':
+                event = 'O'
+
         if 'payload' in data:
             payload = { **data['payload']}
             text = payload
 
             to_en = True
 
-            if 'output' in text:
+            if event == 'O' or (event == '' and 'output' in text):
                 text = text['output']                  
                 if 'generic' in text and len(text['generic']) > 0:
                     text = text['generic'][0]
                     to_en = False
 
             else:
-                if 'input' in text:
+                if event == 'I' or (event == '' and 'input' in text):
                     text = text['input']
             
             if 'text' in text and isinstance(text['text'],str):
@@ -90,8 +104,8 @@ def translate():
                     if 'dialog skill' in user_defined:
                         user_defined = user_defined['dialog skill']
                     else:
-                        user_defined['actions skill'] = {}
-                        user_defined = user_defined['actions skill']
+                        user_defined['main skill'] = {}
+                        user_defined = user_defined['main skill']
                 
                 if not 'user_defined' in user_defined:
                     user_defined['user_defined'] = {}
