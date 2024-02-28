@@ -1,6 +1,8 @@
 import os
+import sys
 from flask import Flask, request, json 
 import time
+import datetime
 import requests
 
 app = Flask(__name__)
@@ -30,7 +32,6 @@ def sap_translate(text, lang_from="", lang_to="en-US"):
         data = { "sourceLanguage": lang_from, "targetLanguage": lang_to, "contentType": "text/plain", "encoding": "plain", "strictMode": False, "data": text }
         response = requests.post(sap_translation_url+'/translation', data=json.dumps(data), headers=headers)
         response_body = response.json()
-        print(str(response_body))
         if response.status_code == 200:
             return (response_body['sourceLanguage'], response_body['data'])
         else:
@@ -41,7 +42,7 @@ def sap_translate(text, lang_from="", lang_to="en-US"):
                     return (lang_to, text)
                 else:
                     return ('', 'ERROR: ' + code)
-            sap_translation_active = False
+            sap_translation_stalled = time.time()
             return ('', 'ERROR: translation')
 
 # get available languages
@@ -52,8 +53,11 @@ def get_languages():
     if response.status_code == 200:
         return response.json()['languages']
     else:
-        print(f"Call to translation service failed with http status {str(response.status_code)}")
+        log(f"Call to translation service failed with http status {str(response.status_code)}")
         return [{'bcpcode': 'en-US', 'name': 'English', 'to': ['en-US']}]
+
+def log(message, sev = 'I'):
+    sys.stderr.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S ") + sev + " " + str(message) + "\n")
 
 
 @app.route('/translate', methods = ['POST'])
@@ -61,6 +65,7 @@ def translate():
     global languages
 
     if request.method == 'POST':
+        log(request.get_data())
         data = json.loads(request.data)
 
         event = ''
@@ -115,9 +120,7 @@ def translate():
                 lang = user_defined['language'] if 'language' in user_defined else ''
                 lang_from = lang if to_en else 'en-US'
                 lang_to = 'en-US' if to_en or lang =='' else lang
-
-                print(f"text: {text['text']}, lang_from: {lang_from}, lang_to: {lang_to}")
-                
+               
                 (lang, text['text']) = sap_translate(text['text'], lang_from, lang_to)
                 if to_en:
                     user_defined['language'] = lang
