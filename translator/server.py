@@ -65,7 +65,7 @@ def translate():
     global languages
 
     if request.method == 'POST':
-        log(request.get_data())
+        log('[REQUEST] ' + str(request.get_data()))
         data = json.loads(request.data)
 
         event = ''
@@ -124,6 +124,8 @@ def translate():
                 (lang, text['text']) = sap_translate(text['text'], lang_from, lang_to)
                 if to_en:
                     user_defined['language'] = lang
+
+            log('[RESPONSE] ' + str(payload))
 
             return { 'payload': payload }
         
