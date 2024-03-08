@@ -124,6 +124,9 @@ def translate():
                 (lang, text['text']) = sap_translate(text['text'], lang_from, lang_to)
                 if to_en:
                     user_defined['language'] = lang
+                else:
+                    if 'language' in user_defined:
+                        del user_defined['language']
 
             log('[RESPONSE] ' + str(payload))
 
