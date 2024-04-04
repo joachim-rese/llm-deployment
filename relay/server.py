@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 url = os.getenv('SERVICE_URL')
 if url == None:
-    url = 'https://eu-de.ml.cloud.ibm.com/ml/v4/deployments/translate/predictions?version=2021-05-01'
+    url = 'https://eu-de.ml.cloud.ibm.com/ml/v4/deployments/<servicename>/predictions?version=2021-05-01'
 
 apikey = os.getenv('SERVICE_APIKEY')
 
@@ -29,8 +29,8 @@ def log(message, sev = 'I'):
 
 
 
-@app.route('/relay', methods = ['POST'])
-def relay():
+@app.route('/<servicename>', methods = ['POST'])
+def relay(servicename):
     global headers, expires_at
 
     http_status = 200
@@ -52,7 +52,7 @@ def relay():
 
         data_base64 = base64.b64encode(pickle.dumps(data)).decode("utf-8")
         payload = { 'input_data': [{'fields': ['base64'], 'values': [[data_base64]]}] }
-        service_response = requests.post(url, json=payload, headers=headers)
+        service_response = requests.post(url.replace('<servicename>', servicename), json=payload, headers=headers)
 
         if service_response.status_code == 200:
             try:
