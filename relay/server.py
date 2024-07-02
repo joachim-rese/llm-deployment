@@ -50,8 +50,22 @@ def relay(servicename):
         data = json.loads(request.data)
         log('[REQUEST] ' + str(data))
 
-        data_base64 = base64.b64encode(pickle.dumps(data)).decode("utf-8")
-        payload = { 'input_data': [{'fields': ['base64'], 'values': [[data_base64]]}] }
+        return_field = None
+        if 'input_data' in data:
+            payload = data
+            if len(data['input_data']) > 0 and 'fields' in data['input_data'][0]:
+                try:
+                    index = data['input_data'][0]['fields'].index('__return')
+                    if len(data['input_data'][0]['values'][0]) > index:
+                        return_field = data['input_data'][0]['values'][0].pop(index)
+                    data['input_data'][0]['fields'].pop(index)
+                except ValueError:
+                    pass
+
+        else:
+            data_base64 = base64.b64encode(pickle.dumps(data)).decode("utf-8")
+            payload = { 'input_data': [{'fields': ['base64'], 'values': [[data_base64]]}] }
+
         service_response = requests.post(url.replace('<servicename>', servicename), json=payload, headers=headers)
 
         if service_response.status_code == 200:
@@ -59,6 +73,8 @@ def relay(servicename):
                 service_data = service_response.json()
                 if service_data['predictions'][0]['fields'][0] == 'base64':
                     response = pickle.loads(base64.b64decode(service_data['predictions'][0]['values'][0][0].encode('utf-8')))
+                elif 'predictions' in service_data:
+                    response = service_data
                 else:
                     response = {'status': 'malformatted service response'}
                     http_status = 400
@@ -73,7 +89,20 @@ def relay(servicename):
         http_status = 404
 
     log('[RESPONSE] ' + str(response))
-    return response, http_status
+    if return_field:
+        if not isinstance(return_field, list):
+            return_field = [return_field]
+        nav = response
+        if 'predictions' in nav and len(nav['predictions']) > 0:
+            nav = nav['predictions'][0]
+        if 'values' in nav and len(nav['values']) > 0:
+            nav = nav['values'][0]
+            if isinstance(nav, list) and len(nav) > 0:
+                nav = nav[0]
+        result = {_return_field: nav[_return_field] if _return_field in nav else '' for _return_field in return_field}
+        return result, http_status
+    else:
+        return response, http_status
 
 if __name__ == '__main__':
     _host = os.getenv('HOST')
