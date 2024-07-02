@@ -47,8 +47,18 @@ def relay(servicename):
             expires_at = time.time() + token_data['expires_in'] - 30
             log('[AUTH] new token')
 
-        data = json.loads(request.data)
+
+        try:
+            data = json.loads(request.data)
+        except:
+            log(f"[REQUEST] invalid input: {str(request.data)}")
+            response = {'status': 'malformatted body (no json)'}
+            http_status = 400
+            return response, http_status
+
+        
         log('[REQUEST] ' + str(data))
+
 
         return_field = None
         if 'input_data' in data:
