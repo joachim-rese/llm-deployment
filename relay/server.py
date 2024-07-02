@@ -76,10 +76,10 @@ def relay(servicename):
                 elif 'predictions' in service_data:
                     response = service_data
                 else:
-                    response = {'status': 'malformatted service response'}
+                    response = {'status': 'malformatted service response (no predictions)'}
                     http_status = 400
             except ValueError:
-                response = {'status': 'malformatted service response'}
+                response = {'status': 'malformatted service response (no json format)'}
                 http_status = 400
         else:
             response = {'status': f"service failed with status {str(service_response.status_code)}"}
